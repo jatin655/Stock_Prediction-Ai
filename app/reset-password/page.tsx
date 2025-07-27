@@ -1,6 +1,6 @@
 "use client"
 
-import DotGrid from "@/components/DotGrid"
+
 import Footer from "@/components/footer"
 import Header from "@/components/header"
 import SplitText from "@/components/SplitText"
@@ -339,20 +339,7 @@ export default function ResetPasswordPage() {
 
   return (
     <div className="min-h-screen relative">
-      {/* DotGrid Background */}
-      <div className="fixed inset-0 z-0">
-        <DotGrid
-          dotSize={6}
-          gap={15}
-          baseColor="#0ea5e9"
-          activeColor="#0284c7"
-          proximity={100}
-          shockRadius={150}
-          shockStrength={2}
-          resistance={900}
-          returnDuration={1.5}
-        />
-      </div>
+
 
       {/* Content */}
       <div className="relative z-10">

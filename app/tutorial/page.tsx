@@ -1,6 +1,6 @@
 "use client"
 
-import DotGrid from "@/components/DotGrid"
+
 import TutorialStepper, { Step } from "@/components/TutorialStepper"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,19 +18,7 @@ export default function TutorialPage() {
   if (!showTutorial) {
     return (
       <div className="min-h-screen relative">
-        <div className="fixed inset-0 z-0">
-          <DotGrid
-            dotSize={8}
-            gap={20}
-            baseColor="#0ea5e9"
-            activeColor="#0284c7"
-            proximity={120}
-            shockRadius={200}
-            shockStrength={3}
-            resistance={800}
-            returnDuration={1.2}
-          />
-        </div>
+
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <Card className="ethereal-card animate-ethereal-glow max-w-md mx-auto">
             <CardContent className="p-8 text-center">
@@ -64,19 +52,7 @@ export default function TutorialPage() {
 
   return (
     <div className="min-h-screen relative">
-      <div className="fixed inset-0 z-0">
-        <DotGrid
-          dotSize={8}
-          gap={20}
-          baseColor="#0ea5e9"
-          activeColor="#0284c7"
-          proximity={120}
-          shockRadius={200}
-          shockStrength={3}
-          resistance={800}
-          returnDuration={1.2}
-        />
-      </div>
+
       <div className="relative z-10">
         <TutorialStepper
           initialStep={1}
