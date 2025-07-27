@@ -15,11 +15,38 @@ import { fetchStockData, searchStocks } from "@/lib/api"
 import { predictNextPrice, trainStockModel } from "@/lib/brain-model"
 import type { StockData } from "@/types/stock"
 import { Activity, BarChart3, Brain, Calendar, Download, Loader2, Search, TrendingUp, Upload } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 
 
 export default function DashboardPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "loading") return // Still loading
+    if (!session) {
+      router.push("/login")
+    }
+  }, [session, status, router])
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-500"></div>
+      </div>
+    )
+  }
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null
+  }
+
   const [selectedStock, setSelectedStock] = useState("MSFT")
   const [stockData, setStockData] = useState<StockData[]>([])
   const [predictions, setPredictions] = useState<Array<{predictedPrice: number, confidence: number}>>([])
