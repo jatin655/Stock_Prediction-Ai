@@ -1,19 +1,31 @@
-import formData from 'form-data'
-import Mailgun from 'mailgun.js'
+import nodemailer from 'nodemailer'
 
-const mailgun = new Mailgun(formData)
-const mg = mailgun.client({
-  username: 'api',
-  key: process.env.MAILGUN_API_KEY || '',
-})
-
-const DOMAIN = process.env.MAILGUN_DOMAIN || ''
+// Create SMTP transporter
+let transporter: nodemailer.Transporter | null = null
+if (process.env.SMTP_SERVER && process.env.SMTP_USER && process.env.SMTP_PASS) {
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_SERVER,
+    port: 587, // or 465 for SSL
+    secure: false, // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  })
+}
 
 export async function sendPasswordResetEmail(email: string, resetToken: string) {
+  // Check if SMTP is configured
+  if (!transporter) {
+    console.log('SMTP not configured. In development, you can use this reset token:', resetToken)
+    console.log('Reset URL:', `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`)
+    return { id: 'dev-mode', message: 'Email would be sent in production' }
+  }
+
   const resetUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
 
-  const data = {
-    from: `CrystalStock AI <noreply@${DOMAIN}>`,
+  const mailOptions = {
+    from: `CrystalStock AI <${process.env.SMTP_USER}>`,
     to: email,
     subject: 'Reset Your CrystalStock AI Password',
     html: `
@@ -67,9 +79,9 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
   }
 
   try {
-    const response = await mg.messages.create(DOMAIN, data)
-    console.log('Password reset email sent successfully:', response)
-    return response
+    const info = await transporter.sendMail(mailOptions)
+    console.log('Password reset email sent successfully:', info.messageId)
+    return { id: info.messageId, message: 'Email sent successfully' }
   } catch (error) {
     console.error('Error sending password reset email:', error)
     throw new Error('Failed to send password reset email')
@@ -77,8 +89,14 @@ export async function sendPasswordResetEmail(email: string, resetToken: string) 
 }
 
 export async function sendWelcomeEmail(email: string, name: string) {
-  const data = {
-    from: `CrystalStock AI <noreply@${DOMAIN}>`,
+  // Check if SMTP is configured
+  if (!transporter) {
+    console.log('SMTP not configured. Welcome email would be sent in production.')
+    return { id: 'dev-mode', message: 'Email would be sent in production' }
+  }
+
+  const mailOptions = {
+    from: `CrystalStock AI <${process.env.SMTP_USER}>`,
     to: email,
     subject: 'Welcome to CrystalStock AI!',
     html: `
@@ -125,9 +143,9 @@ export async function sendWelcomeEmail(email: string, name: string) {
   }
 
   try {
-    const response = await mg.messages.create(DOMAIN, data)
-    console.log('Welcome email sent successfully:', response)
-    return response
+    const info = await transporter.sendMail(mailOptions)
+    console.log('Welcome email sent successfully:', info.messageId)
+    return { id: info.messageId, message: 'Email sent successfully' }
   } catch (error) {
     console.error('Error sending welcome email:', error)
     throw new Error('Failed to send welcome email')

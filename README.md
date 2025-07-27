@@ -95,9 +95,11 @@ The concept behind CrystalStock AI was to create a sophisticated yet accessible 
    # TwelveData API
    TWELVEDATA_API_KEY=your_twelvedata_api_key
    
-   # Email (optional)
-   MAILGUN_API_KEY=your_mailgun_api_key
-   MAILGUN_DOMAIN=your_mailgun_domain
+       # Email (optional)
+    SMTP_SERVER=your_smtp_server
+    SMTP_USER=your_smtp_username
+    SMTP_PASS=your_smtp_password
+    ADMIN_ALERT_EMAIL=your_admin_email
    ```
 
 4. **Set up MongoDB**
