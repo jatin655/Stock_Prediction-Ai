@@ -25,28 +25,7 @@ export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (status === "loading") return // Still loading
-    if (!session) {
-      router.push("/login")
-    }
-  }, [session, status, router])
-
-  // Show loading while checking authentication
-  if (status === "loading") {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-500"></div>
-      </div>
-    )
-  }
-
-  // Don't render if not authenticated
-  if (!session) {
-    return null
-  }
-
+  // All hooks must be called before any conditional returns
   const [selectedStock, setSelectedStock] = useState("MSFT")
   const [stockData, setStockData] = useState<StockData[]>([])
   const [predictions, setPredictions] = useState<Array<{predictedPrice: number, confidence: number}>>([])
@@ -69,9 +48,7 @@ export default function DashboardPage() {
   const popularStocks = ["AAPL", "GOOGL", "MSFT", "AMZN", "TSLA", "META", "NVDA", "NFLX", "SPY", "QQQ"]
   const [availableStocks, setAvailableStocks] = useState<string[]>(popularStocks)
 
-
-
-  // Add searched stock to available stocks
+  // Define functions before hooks that use them
   const addStockToAvailable = (symbol: string) => {
     if (!availableStocks.includes(symbol)) {
       setAvailableStocks(prev => [...prev, symbol])
@@ -114,16 +91,6 @@ export default function DashboardPage() {
     }
   }
 
-  const handleStockChange = async (stock: string) => {
-    console.log("Changing stock to:", stock)
-    setSelectedStock(stock)
-    await loadStockData(stock)
-  }
-
-  const handleDaysToPredictChange = (value: string) => {
-    setDaysToPredict(value)
-  }
-
   // Handle stock search
   const handleSearchStocks = async (query: string) => {
     if (query.length < 2) {
@@ -141,117 +108,6 @@ export default function DashboardPage() {
     } finally {
       setIsSearching(false)
     }
-  }
-
-  // Debounced search
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (searchQuery.length >= 2) {
-        handleSearchStocks(searchQuery)
-      } else {
-        setSearchResults([])
-      }
-    }, 500) // Debounce for 500ms
-
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery])
-
-  // Handle file upload
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    setIsUploading(true)
-    setError("")
-
-    try {
-      const text = await file.text()
-      let data: StockData[] = []
-
-      if (file.name.endsWith('.json')) {
-        const jsonData = JSON.parse(text)
-        data = Array.isArray(jsonData) ? jsonData : jsonData.data || jsonData.values || []
-      } else if (file.name.endsWith('.csv')) {
-        data = parseCSV(text)
-      } else {
-        throw new Error("Unsupported file format. Please upload JSON or CSV files.")
-      }
-
-      // Validate data format
-      if (data.length === 0) {
-        throw new Error("No valid data found in file")
-      }
-
-      // Ensure data has required fields
-      const validatedData = data.map((item, index) => ({
-        date: item.date || new Date(Date.now() - (data.length - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        price: Number(item.price) || Number(item.close) || 0,
-        open: Number(item.open) || Number(item.price) || 0,
-        high: Number(item.high) || Number(item.price) || 0,
-        low: Number(item.low) || Number(item.price) || 0,
-        volume: Number(item.volume) || 0,
-      })).filter(item => item.price > 0)
-
-      if (validatedData.length < 20) {
-        throw new Error("Need at least 20 valid data points. Found " + validatedData.length)
-      }
-
-      console.log(`Successfully uploaded ${validatedData.length} data points`)
-      setUploadedData(validatedData)
-      setStockData(validatedData)
-      setCurrentPrice(validatedData[validatedData.length - 1].price)
-      setPredictions([])
-      setPredictionResults(null)
-      setModel(null)
-      setSelectedStock("UPLOADED")
-      console.log("Using uploaded data with", validatedData.length, "data points")
-      setError("") // Clear any previous errors
-      setError("") // Clear any previous errors
-    } catch (error) {
-      console.error("Error uploading file:", error)
-      setError(error instanceof Error ? error.message : "Failed to upload file")
-    } finally {
-      setIsUploading(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ""
-      }
-    }
-  }
-
-  // Download sample data
-  const handleDownloadSample = () => {
-    const sampleData = [
-      { date: "2024-01-01", price: 185.64, open: 184.50, high: 186.20, low: 183.80, volume: 45678900 },
-      { date: "2024-01-02", price: 187.15, open: 185.64, high: 188.10, low: 185.20, volume: 52345600 },
-      { date: "2024-01-03", price: 186.20, open: 187.15, high: 187.80, low: 185.90, volume: 49876500 },
-      { date: "2024-01-04", price: 188.50, open: 186.20, high: 189.30, low: 186.00, volume: 51234500 },
-      { date: "2024-01-05", price: 189.80, open: 188.50, high: 190.20, low: 188.10, volume: 48765400 },
-      { date: "2024-01-06", price: 191.20, open: 189.80, high: 192.10, low: 189.50, volume: 53456700 },
-      { date: "2024-01-07", price: 190.50, open: 191.20, high: 191.80, low: 189.90, volume: 45678900 },
-      { date: "2024-01-08", price: 192.30, open: 190.50, high: 193.20, low: 190.20, volume: 56789000 },
-      { date: "2024-01-09", price: 193.80, open: 192.30, high: 194.50, low: 192.00, volume: 59876500 },
-      { date: "2024-01-10", price: 194.20, open: 193.80, high: 195.10, low: 193.50, volume: 52345600 },
-      { date: "2024-01-11", price: 195.50, open: 194.20, high: 196.30, low: 194.00, volume: 54567800 },
-      { date: "2024-01-12", price: 196.80, open: 195.50, high: 197.40, low: 195.20, volume: 56789000 },
-      { date: "2024-01-13", price: 197.20, open: 196.80, high: 198.10, low: 196.50, volume: 52345600 },
-      { date: "2024-01-14", price: 198.50, open: 197.20, high: 199.20, low: 197.00, volume: 58901200 },
-      { date: "2024-01-15", price: 199.80, open: 198.50, high: 200.30, low: 198.30, volume: 61234500 },
-      { date: "2024-01-16", price: 200.20, open: 199.80, high: 201.10, low: 199.60, volume: 53456700 },
-      { date: "2024-01-17", price: 201.50, open: 200.20, high: 202.40, low: 200.00, volume: 57890100 },
-      { date: "2024-01-18", price: 202.80, open: 201.50, high: 203.50, low: 201.30, volume: 60123400 },
-      { date: "2024-01-19", price: 203.20, open: 202.80, high: 204.20, low: 202.60, volume: 54567800 },
-      { date: "2024-01-20", price: 204.50, open: 203.20, high: 205.30, low: 203.00, volume: 62345600 }
-    ]
-    
-    const blob = new Blob([JSON.stringify(sampleData, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'sample-stock-data.json'
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
   }
 
   // Parse CSV data
@@ -278,6 +134,7 @@ export default function DashboardPage() {
     }).filter(item => item.price > 0)
   }
 
+  // All useCallback hooks must be defined before any conditional returns
   const handleTrainModel = useCallback(async () => {
     console.log("=== TRAIN MODEL BUTTON CLICKED ===")
     console.log("Stock data length:", stockData.length)
@@ -397,6 +254,153 @@ export default function DashboardPage() {
     console.log("Component mounted, loading initial data...")
     loadStockData(selectedStock)
   }, [])
+
+  // Debounced search
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (searchQuery.length >= 2) {
+        handleSearchStocks(searchQuery)
+      } else {
+        setSearchResults([])
+      }
+    }, 500) // Debounce for 500ms
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery])
+
+  // Show loading while checking authentication
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-sky-500"></div>
+      </div>
+    )
+  }
+
+  // Show login prompt if not authenticated
+  if (!session) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-white text-xl mb-4">Please log in to access the dashboard</div>
+          <a 
+            href="/login" 
+            className="inline-block bg-sky-500 hover:bg-sky-600 text-white px-6 py-3 rounded-lg transition-colors"
+          >
+            Go to Login
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const handleStockChange = async (stock: string) => {
+    console.log("Changing stock to:", stock)
+    setSelectedStock(stock)
+    await loadStockData(stock)
+  }
+
+  const handleDaysToPredictChange = (value: string) => {
+    setDaysToPredict(value)
+  }
+
+  // Handle file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setError("")
+
+    try {
+      const text = await file.text()
+      let data: StockData[] = []
+
+      if (file.name.endsWith('.json')) {
+        const jsonData = JSON.parse(text)
+        data = Array.isArray(jsonData) ? jsonData : jsonData.data || jsonData.values || []
+      } else if (file.name.endsWith('.csv')) {
+        data = parseCSV(text)
+      } else {
+        throw new Error("Unsupported file format. Please upload JSON or CSV files.")
+      }
+
+      // Validate data format
+      if (data.length === 0) {
+        throw new Error("No valid data found in file")
+      }
+
+      // Ensure data has required fields
+      const validatedData = data.map((item, index) => ({
+        date: item.date || new Date(Date.now() - (data.length - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        price: Number(item.price) || Number(item.close) || 0,
+        open: Number(item.open) || Number(item.price) || 0,
+        high: Number(item.high) || Number(item.price) || 0,
+        low: Number(item.low) || Number(item.price) || 0,
+        volume: Number(item.volume) || 0,
+      })).filter(item => item.price > 0)
+
+      if (validatedData.length < 20) {
+        throw new Error("Need at least 20 valid data points. Found " + validatedData.length)
+      }
+
+      console.log(`Successfully uploaded ${validatedData.length} data points`)
+      setUploadedData(validatedData)
+      setStockData(validatedData)
+      setCurrentPrice(validatedData[validatedData.length - 1].price)
+      setPredictions([])
+      setPredictionResults(null)
+      setModel(null)
+      setSelectedStock("UPLOADED")
+      console.log("Using uploaded data with", validatedData.length, "data points")
+      setError("") // Clear any previous errors
+      setError("") // Clear any previous errors
+    } catch (error) {
+      console.error("Error uploading file:", error)
+      setError(error instanceof Error ? error.message : "Failed to upload file")
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    }
+  }
+
+  // Download sample data
+  const handleDownloadSample = () => {
+    const sampleData = [
+      { date: "2024-01-01", price: 185.64, open: 184.50, high: 186.20, low: 183.80, volume: 45678900 },
+      { date: "2024-01-02", price: 187.15, open: 185.64, high: 188.10, low: 185.20, volume: 52345600 },
+      { date: "2024-01-03", price: 186.20, open: 187.15, high: 187.80, low: 185.90, volume: 49876500 },
+      { date: "2024-01-04", price: 188.50, open: 186.20, high: 189.30, low: 186.00, volume: 51234500 },
+      { date: "2024-01-05", price: 189.80, open: 188.50, high: 190.20, low: 188.10, volume: 48765400 },
+      { date: "2024-01-06", price: 191.20, open: 189.80, high: 192.10, low: 189.50, volume: 53456700 },
+      { date: "2024-01-07", price: 190.50, open: 191.20, high: 191.80, low: 189.90, volume: 45678900 },
+      { date: "2024-01-08", price: 192.30, open: 190.50, high: 193.20, low: 190.20, volume: 56789000 },
+      { date: "2024-01-09", price: 193.80, open: 192.30, high: 194.50, low: 192.00, volume: 59876500 },
+      { date: "2024-01-10", price: 194.20, open: 193.80, high: 195.10, low: 193.50, volume: 52345600 },
+      { date: "2024-01-11", price: 195.50, open: 194.20, high: 196.30, low: 194.00, volume: 54567800 },
+      { date: "2024-01-12", price: 196.80, open: 195.50, high: 197.40, low: 195.20, volume: 56789000 },
+      { date: "2024-01-13", price: 197.20, open: 196.80, high: 198.10, low: 196.50, volume: 52345600 },
+      { date: "2024-01-14", price: 198.50, open: 197.20, high: 199.20, low: 197.00, volume: 58901200 },
+      { date: "2024-01-15", price: 199.80, open: 198.50, high: 200.30, low: 198.30, volume: 61234500 },
+      { date: "2024-01-16", price: 200.20, open: 199.80, high: 201.10, low: 199.60, volume: 53456700 },
+      { date: "2024-01-17", price: 201.50, open: 200.20, high: 202.40, low: 200.00, volume: 57890100 },
+      { date: "2024-01-18", price: 202.80, open: 201.50, high: 203.50, low: 201.30, volume: 60123400 },
+      { date: "2024-01-19", price: 203.20, open: 202.80, high: 204.20, low: 202.60, volume: 54567800 },
+      { date: "2024-01-20", price: 204.50, open: 203.20, high: 205.30, low: 203.00, volume: 62345600 }
+    ]
+    
+    const blob = new Blob([JSON.stringify(sampleData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'sample-stock-data.json'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
 
   return (
     <div className="min-h-screen relative bg-black">
