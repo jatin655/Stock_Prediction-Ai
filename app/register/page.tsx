@@ -79,13 +79,18 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setSuccess("Registration successful! Please check your email to verify your account.")
+        setSuccess("Registration successful! Redirecting to login...")
+        // Clear form data
         setFormData({
           name: "",
           email: "",
           password: "",
           confirmPassword: "",
         })
+        // Redirect to login page after 2 seconds
+        setTimeout(() => {
+          router.push("/login")
+        }, 2000)
       } else {
         setError(data.error || "Registration failed. Please try again.")
       }
