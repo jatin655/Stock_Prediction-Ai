@@ -4,6 +4,9 @@ import clientPromise from '@/lib/mongodb'
 import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // GET - Get audit logs (admin only)
 export async function GET(request: NextRequest) {
   try {
