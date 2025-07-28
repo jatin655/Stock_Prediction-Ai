@@ -254,6 +254,6 @@ If you have any questions or need help:
 
 ---
 
-**Built with ❤️ and ☕ by [Your Name]**
+**Built with ❤️ and ☕ by Jatin**
 
 *CrystalStock AI - Where Intelligence Meets Elegance*
